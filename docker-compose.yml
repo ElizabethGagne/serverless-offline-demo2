@@ -1,0 +1,35 @@
+version: '2'  
+services:  
+  web:
+    container_name: web
+    build: ./serverless-code
+    ports:
+     - "3000:3000"
+    depends_on:
+     - localstack
+    volumes:
+     - ~/.aws/:/root/.aws:ro
+    environment:
+     # Environment variables to configure the app on startup.
+     - DYNAMODB_ENDPOINT=http://localstack:4569/
+     - KINESIS_ENDPOINT=http://localstack:4568/
+
+  localstack:
+    container_name: localstack
+    image: atlassianlabs/localstack
+    ports:
+     - "4567-4576:4567-4576"
+
+  kinesis-consumer:
+    container_name: kinesis-consumer
+    build:
+      context: ./serverless-code
+      dockerfile: Dockerfile.kinesis
+    restart: always
+    environment:
+     # Environment variables to configure the app on startup.
+     - IS_RUN_KINESIS_LAMBDA_RUNNER=true
+     - STREAM_NAME=dev-data-receiver
+     - KINESIS_ENDPOINT=http://localstack:4568/
+    depends_on:
+     - localstack
